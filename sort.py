@@ -5,53 +5,56 @@ import os
 from typing import List, io
 
 
-def chunk_file(chunk_number):
+def chunk_file(chunk_number: int) -> str:
     return "chunk_%s.txt" % chunk_number
 
 
-def save_chunk(chunk, chunk_number):
+def save_chunk(chunk: list[str], chunk_number: int) -> None:
     chunk.sort()
     with open(chunk_file(chunk_number), "w") as out:
         out.writelines(chunk)
 
 
-def merge_chunks(chunk_count, output):
-    files: List[io] = [None] * chunk_count
-    strings: List[str] = [None] * chunk_count
+def merge_chunks(chunk_count: int, output: str) -> None:
+    files: List[io | None] = [None] * chunk_count
+    strings: List[str | None] = [None] * chunk_count
 
-    for i in range(chunk_count):
-        if os.path.exists(chunk_file(i)):
-            files[i] = open(chunk_file(i), "r")
-            strings[i] = files[i].readline()
+    for chunk_number in range(chunk_count):
+        if os.path.exists(chunk_file(chunk_number)):
+            files[chunk_number] = open(chunk_file(chunk_number), "r")
+            strings[chunk_number] = files[chunk_number].readline()
         else:
-            chunk_count = i
-            strings[i] = ""
+            chunk_count = chunk_number
+            strings[chunk_number] = ""
             break
 
     with open(output, "w") as out:
         while True:
-            min = None
+            min: str | None = None
             min_index = -1
-            for i in range(chunk_count):
-                if strings[i] and (min is None or min > strings[i]):
-                    min = strings[i]
-                    min_index = i
+            for chunk_number in range(chunk_count):
+                if strings[chunk_number] and (min is None or min > strings[chunk_number]):
+                    min = strings[chunk_number]
+                    min_index = chunk_number
             if min is None:
                 break
             out.write(min)
             strings[min_index] = files[min_index].readline()
-    for i in range(chunk_count):
-        if files[i]:
-            os.unlink(chunk_file(i))
-            files[i].close()
+
+    for chunk_number in range(chunk_count):
+        if files[chunk_number]:
+            os.unlink(chunk_file(chunk_number))
+            files[chunk_number].close()
 
 
-def sort(chunk_count, chunk_size, input, output):
+def sort(chunk_count: int, chunk_size: int, input: str, output: str) -> None:
+    chunk: list[str]
     chunk_number = 0
+
     with open(input, "r") as original:
         chunk = []
-        for s in original:
-            chunk.append(s)
+        for row in original:
+            chunk.append(row)
             if len(chunk) >= chunk_size:
                 save_chunk(chunk, chunk_number)
                 chunk_number += 1
@@ -63,9 +66,9 @@ def sort(chunk_count, chunk_size, input, output):
 
     save_chunk(chunk, chunk_number)
     merge_chunks(chunk_count, output)
-    for i in range(chunk_count):
-        if os.path.exists(chunk_file(i)):
-            os.unlink(chunk_file(i))
+    for chunk_number in range(chunk_count):
+        if os.path.exists(chunk_file(chunk_number)):
+            os.unlink(chunk_file(chunk_number))
 
 
 parser = argparse.ArgumentParser()
